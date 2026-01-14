@@ -1,26 +1,171 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-gray-100 text-gray-900;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+    /* 
+     * We simulate pages by having a continuous white Editor
+     * but we inject "Print Gaps" via the Pagination Plugin.
+     * 
+     * However, to make the FIRST page look like a page, 
+     * the Editor itself must have the correct width and styling.
+     */
+    /* 
+     * REALISTIC PAGE VIEW
+     * We want the editor to look like distinct A4 pages on a gray desk.
+     * Since Tiptap/ProseMirror is a single contenteditable div, we simulate this.
+     *
+     * 1. The .editor-container acts as the "Desk" (gray background).
+     * 2. The .ProseMirror (content) acts as the continuous sheet... wait.
+     *    If .ProseMirror is white, we get one long sheet.
+     *    
+     *    TRICK: 
+     *    - .editor-container: transparent (or gray).
+     *    - .ProseMirror: white (Page 1).
+     *    - .page-break-widget: Acts as the "Gap" essentialy masking the continuous white 
+     *      or adding the gray desk view.
+     */
+
+    .editor-container {
+        @apply mx-auto my-8;
+        width: 210mm; 
+        /* The container itself doesn't have the white bg anymore, 
+           simulating the first page via ProseMirror class */
+    }
+
+    /* The Editor Canvas (Page 1 starts here) */
+    .ProseMirror {
+        @apply outline-none shadow-lg bg-white text-gray-900 prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none;
+        padding: 25.4mm; /* 1 inch margin */
+        min-height: 297mm;
+    }
+    
+    /* Ensure typography styles work */
+    .ProseMirror h1 {
+        @apply text-3xl font-bold mb-4 mt-6;
+    }
+    .ProseMirror h2 {
+        @apply text-2xl font-semibold mb-3 mt-5;
+    }
+    .ProseMirror p {
+        @apply mb-4 leading-relaxed;
+    }
+    .ProseMirror ul {
+        @apply list-disc list-outside ml-6 mb-4;
+    }
+    .ProseMirror ol {
+        @apply list-decimal list-outside ml-6 mb-4;
+    }
+    .ProseMirror strong {
+        @apply font-bold;
+    }
+    .ProseMirror em {
+        @apply italic;
+    }
+
+    /* 
+     * VISUAL PAGE BREAK WIDGET
+     * This widget visually separates "Page N" from "Page N+1".
+     * It simulates:
+     * 1. The whitespace at the bottom of Page N.
+     * 2. The gray gap between pages.
+     * 3. The whitespace at the top of Page N+1.
+     */
+    .page-break-widget {
+        display: flex;
+        flex-direction: column;
+        width: 210mm;
+        margin-left: -25.4mm; /* Counteract editor padding */
+        
+        /* The Gap Color (The Desk) */
+        background-color: #f3f4f6; /* bg-gray-100 matches body */
+        
+        /* Borders to define page edges */
+        border-top: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        
+        /* Shadow to create depth for the "Sheets" above and below */
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 4px rgba(0,0,0,0.05);
+
+        position: relative;
+        z-index: 10;
+        
+        /* Ensure text cursor doesn't get lost here */
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* The "Page X" label, floating in the gap or on the page corner */
+    .page-number-label {
+        position: absolute;
+        right: 25.4mm; /* Align with right margin */
+        top: -30px; /* Sit inside the PREVIOUS page's bottom margin area? */
+        /* Or inside the gap? Let's put it in the gap for clarity */
+        top: 50%;
+        transform: translateY(-50%);
+        
+        color: #9ca3af;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .page-number-label {
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* When printing, we want to hide the gaps and just flow or break naturally */
+    @media print {
+  body {
+    background: white;
+  }
+
+  .editor-container {
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  
+  .page-A4 {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      border: none;
+  }
+
+  /* Hide the gray page break widgets when printing, let the natural break happen? 
+     Actually, if we print, we want the browser to break where we visualized it.
+     But we are using absolute widgets... printing might be tricky.
+     Since we didn't force a real "break-after", the browser will break naturally.
+     Ideally, we hide our fake break and let content flow. 
+     OR we force a break after the node that triggered it? content-break-after: always?
+     
+     The widget is just visual. Let's hide it.
+  */
+  .page-break-widget {
+    display: none;
+  }
+  
+  /* Force page break on the container if needed? No, standard flow. */
+  @page {
+    size: A4;
+    margin: 1cm; /* Matches our editor padding roughly */
+  }
+  
+  /* Hide Toolbar */
+  .toolbar-container {
+      display: none;
+  }
+}
 }

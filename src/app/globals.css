@@ -143,16 +143,6 @@
       overflow: visible;
       border: none;
   }
-
-  /* Hide the gray page break widgets when printing, let the natural break happen? 
-     Actually, if we print, we want the browser to break where we visualized it.
-     But we are using absolute widgets... printing might be tricky.
-     Since we didn't force a real "break-after", the browser will break naturally.
-     Ideally, we hide our fake break and let content flow. 
-     OR we force a break after the node that triggered it? content-break-after: always?
-     
-     The widget is just visual. Let's hide it.
-  */
   .page-break-widget {
     display: none;
   }

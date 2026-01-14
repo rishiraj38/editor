@@ -38,18 +38,15 @@ export const PaginationExtension = Extension.create({
              isScheduled = false;
              const { state, dispatch } = editorView;
              
-             // A4 Constants (96 DPI)
              const A4_HEIGHT = 1123;
              const PAGE_MARGIN_TOP = 96;
              const PAGE_MARGIN_BOTTOM = 96;
-             const CONTENT_HEIGHT = A4_HEIGHT - PAGE_MARGIN_TOP - PAGE_MARGIN_BOTTOM; // 931px
+             const CONTENT_HEIGHT = A4_HEIGHT - PAGE_MARGIN_TOP - PAGE_MARGIN_BOTTOM;
              
-             // Get CURRENTLY RENDERED spacers to perform mathematical correction
-             // We do NOT hide them (prevents flickering). We just subtract their heights.
              const spacerElements = Array.from(editorView.dom.querySelectorAll('.page-spacer-widget')).map(el => {
                  const rect = el.getBoundingClientRect();
                  return {
-                     bottom: rect.bottom, // We use global visual sorting
+                     bottom: rect.bottom,
                      height: rect.height
                  };
              }).sort((a, b) => a.bottom - b.bottom);
@@ -57,12 +54,11 @@ export const PaginationExtension = Extension.create({
              const editorRect = editorView.dom.getBoundingClientRect();
              const decorations: Decoration[] = [];
              
-             // Grid-Based Accumulation Logic
              let accumulatedSpacerHeight = 0;
-             let nextPageTargetVisual = A4_HEIGHT; // First break at 1123px
+             let nextPageTargetVisual = A4_HEIGHT;
              let currentPageContentStart = 0; 
              let pageIndex = 0;
-             let maxVisualBottom = 0; // Track deep content for filler
+             let maxVisualBottom = 0;
 
              state.doc.descendants((node, pos) => {
                  if (!node.isBlock) return false;
@@ -75,7 +71,6 @@ export const PaginationExtension = Extension.create({
                  
                  const rect = dom.getBoundingClientRect();
                  
-                 // Calculate "Clean" Top by subtracting specific spacers that are ABOVE this node
                  const topWithSpacers = rect.top;
                  
                  let existingSpacersAbove = 0;
@@ -97,7 +92,6 @@ export const PaginationExtension = Extension.create({
                  const isGiant = height > CONTENT_HEIGHT;
                  
                  if (contentBottomOnPage > CONTENT_HEIGHT && !isGiant) {
-                     // Break
                      const currentVisualTop = cleanVisualTop + accumulatedSpacerHeight;
                      const targetVisualContentStart = nextPageTargetVisual + PAGE_MARGIN_TOP;
                      const spacerHeight = targetVisualContentStart - currentVisualTop;
@@ -113,16 +107,15 @@ export const PaginationExtension = Extension.create({
                                 spacer.style.userSelect = 'none';
                                 spacer.style.pointerEvents = 'none';
                                 spacer.style.position = 'relative';
-                                spacer.style.backgroundColor = 'white'; // Paper color
+                                spacer.style.backgroundColor = 'white';
                                 
-                                // PRO VISUALS: The Gap between pages
                                 const gapContainer = document.createElement('div');
                                 gapContainer.style.position = 'absolute';
                                 gapContainer.style.bottom = '96px';
                                 gapContainer.style.left = '0';
                                 gapContainer.style.right = '0';
                                 gapContainer.style.height = '30px'; 
-                                gapContainer.style.backgroundColor = '#f3f4f6'; // bg-gray-100
+                                gapContainer.style.backgroundColor = '#f3f4f6';
                                 gapContainer.style.zIndex = '10';
                                 gapContainer.style.transform = 'translateY(50%)'; 
                                 gapContainer.style.boxShadow = 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1)';
@@ -150,7 +143,6 @@ export const PaginationExtension = Extension.create({
                      }
                  }
                  
-                 // Track deepest point using clean visual + height
                  if (cleanVisualTop + height > maxVisualBottom) {
                      maxVisualBottom = cleanVisualTop + height;
                  }
@@ -158,11 +150,9 @@ export const PaginationExtension = Extension.create({
                  return false;
              });
              
-             // LAST PAGE FILLER
              const currentTotalVisualBottom = maxVisualBottom + accumulatedSpacerHeight;
              const fillerHeight = nextPageTargetVisual - currentTotalVisualBottom;
              
-             // Only add filler if it makes sense (positive and less than a full page to avoid infinite loops)
              if (fillerHeight > 0 && fillerHeight < A4_HEIGHT) {
                  decorations.push(Decoration.widget(state.doc.content.size, () => {
                      const filler = document.createElement('div');
@@ -176,7 +166,6 @@ export const PaginationExtension = Extension.create({
                  }, { side: 1, key: 'last-page-filler' }));
              }
              
-             // Stable comparison
              const currentSet = paginationKey.getState(state);
              const currentList = currentSet ? currentSet.find() : [];
              const currentSig = currentList.map((d: any) => `${d.from}-${d.spec.height || 0}`).join(',');

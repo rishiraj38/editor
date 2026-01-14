@@ -11,7 +11,7 @@ import {
   Undo,
   Redo,
   Table as TableIcon,
-  Pilcrow, // Normal text
+  Pilcrow,
   RemoveFormatting
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -21,7 +21,6 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ editor }: ToolbarProps) {
-  // Force re-render on editor updates to ensure UI state is fresh
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export function Toolbar({ editor }: ToolbarProps) {
 
     const handleUpdate = () => forceUpdate((prev) => prev + 1);
 
-    // Subscribe to transactions (selection, content changes)
     editor.on('transaction', handleUpdate);
     editor.on('selectionUpdate', handleUpdate);
 
@@ -47,7 +45,7 @@ export function Toolbar({ editor }: ToolbarProps) {
     disabled,
     children,
     title,
-    variant = 'default' // 'default' | 'segmented'
+    variant = 'default'
   }: {
     onClick: () => void;
     isActive?: boolean;
@@ -61,10 +59,9 @@ export function Toolbar({ editor }: ToolbarProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        "p-2 rounded flex items-center justify-center cursor-pointer", // Base styles with cursor-pointer
-        "transition-colors duration-75", // Fast color transitions only
+        "p-2 rounded flex items-center justify-center cursor-pointer",
+        "transition-colors duration-75",
         
-        // Variant: Default (Standard Toolbar Button)
         variant === 'default' && [
            "hover:bg-gray-200 hover:shadow-sm",
            isActive 
@@ -73,11 +70,10 @@ export function Toolbar({ editor }: ToolbarProps) {
            disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:shadow-none"
         ],
 
-        // Variant: Segmented (Inside a gray container)
         variant === 'segmented' && [
-          "text-sm h-8 w-8 p-1", // Compact
+          "text-sm h-8 w-8 p-1",
           isActive 
-            ? "bg-white text-blue-600 shadow-sm rounded-md ring-1 ring-gray-200 transition-all duration-100" // Slightly smoother for the 'move' effect but still fast
+            ? "bg-white text-blue-600 shadow-sm rounded-md ring-1 ring-gray-200 transition-all duration-100"
             : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900",
           disabled && "opacity-40"
         ]
@@ -90,7 +86,6 @@ export function Toolbar({ editor }: ToolbarProps) {
   return (
     <div className="border-b border-gray-200 bg-white/80 backdrop-blur-sm p-2 flex gap-2 sticky top-0 z-50 flex-wrap items-center shadow-sm">
       
-      {/* Typography Segmented Control */}
       <div className="bg-gray-100 p-1 rounded-lg flex gap-0.5 border border-gray-200 mr-2">
          <Button
             onClick={() => editor.chain().focus().setParagraph().run()}

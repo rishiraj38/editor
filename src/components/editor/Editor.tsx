@@ -45,7 +45,6 @@ export function Editor() {
     `,
     editorProps: {
       attributes: {
-        // Classes are now handled in globals.css for consistent A4 styling
         class: 'focus:outline-none',
       },
     },
@@ -55,7 +54,6 @@ export function Editor() {
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Toolbar editor={editor} />
       
-      {/* Editor Container - acts as the "desk" */}
       <div className="flex-1 overflow-y-auto p-8" onClick={() => editor?.chain().focus().run()}>
         <div className="editor-container">
           <EditorContent editor={editor} />

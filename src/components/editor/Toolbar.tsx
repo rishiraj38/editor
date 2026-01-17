@@ -12,9 +12,12 @@ import {
   Redo,
   Table as TableIcon,
   Pilcrow,
-  RemoveFormatting
+  RemoveFormatting,
+  Download,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { exportToPdf, exportToDocx } from '@/utils/exportUtils';
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -22,6 +25,8 @@ interface ToolbarProps {
 
 export function Toolbar({ editor }: ToolbarProps) {
   const [, forceUpdate] = useState(0);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!editor) return;
@@ -36,6 +41,13 @@ export function Toolbar({ editor }: ToolbarProps) {
       editor.off('selectionUpdate', handleUpdate);
     };
   }, [editor]);
+
+
+  useEffect(() => {
+    const handleClickOutside = () => setShowExportMenu(false);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   if (!editor) return null;
 
@@ -175,6 +187,47 @@ export function Toolbar({ editor }: ToolbarProps) {
       </div>
 
       <div className="flex gap-1 ml-auto">
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <Button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                title="Download"
+                disabled={isExporting}
+            >
+                <Download size={18} />
+            </Button>
+            
+            {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-1 min-w-[160px] flex flex-col z-50">
+                    <button
+                        onClick={async () => {
+                            setShowExportMenu(false);
+                            setIsExporting(true);
+                            await exportToPdf();
+                            setIsExporting(false);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded text-left w-full cursor-pointer"
+                    >
+                        <FileText size={14} />
+                        Export to PDF
+                    </button>
+                    <button
+                        onClick={async () => {
+                            setShowExportMenu(false);
+                            setIsExporting(true);
+                            await exportToDocx(editor.getHTML());
+                            setIsExporting(false);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded text-left w-full cursor-pointer"
+                    >
+                        <FileText size={14} />
+                        Export to DOCX
+                    </button>
+                </div>
+            )}
+        </div>
+
+        <div className="w-px h-6 bg-gray-300 mx-1" />
+
         <Button
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().chain().focus().undo().run()}

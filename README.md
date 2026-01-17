@@ -11,6 +11,9 @@ A Tiptap-based rich text editor with real-time A4 pagination for legal document 
     - **Segmented Typography Control**: "Normal", "Heading 1", "Heading 2" with iOS-style sliding active state.
     - **Quick Actions**: "Clear Formatting" and standard rich text tools.
     - **Instant Feedback**: Optimized CSS (75ms transitions) for zero-lag UI.
+- **Export Options**: 
+    - **PDF**: High-fidelity export using native browser rendering (`html-to-image`), supporting modern CSS features like `lab()` colors.
+    - **DOCX**: Instant conversion to editable Word documents.
 - **Print Accuracy**: What you see matches PDF/DOCX export.
 - **Non-Destructive**: Page breaks are purely visual—document structure remains intact (one continuous editor).
 
@@ -44,12 +47,18 @@ The pagination system uses a **custom ProseMirror plugin** that transforms the s
 - Implements `requestAnimationFrame` loop to debounce rapid typing measurements.
 - Uses `ResizeObserver` to handle window resizing reflows.
 
+**Export System** (`src/utils/exportUtils.ts`):
+- **PDF**: Uses `html-to-image` to serialize the DOM into an SVG/PNG. This bypasses the limitations of JS-based CSS parsers (like `html2canvas`), enabling full support for modern CSS variables and Tailwind v4 features.
+- **DOCX**: wraps content in standard HTML structure and converts via `html-docx-js-typescript`.
+
 **A4 Constants** (at 96 DPI):
 - Page Height: 1123px (297mm)
 - Margins: 96px top/bottom (1 inch)
 - Content Area: 931px
 
-### Recent Improvements (v1.1)
+### Recent Improvements (v1.2)
+- **PDF Export Engine**: Switched to `html-to-image` to resolve "lab() color" syntax crashes.
+- **Codebase Cleanup**: Removed all legacy comments and debug code.
 - **Fixed Page Numbering**: Logic corrected to accurately label the footer of the current page.
 - **Performance**: Removed layout transitions to prevent thrashing; Toolbar is now instant.
 - **UX**: Added tooltips to all buttons and cursor-pointer indicators.

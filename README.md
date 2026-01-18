@@ -19,49 +19,71 @@ A Tiptap-based rich text editor with real-time A4 pagination for legal document 
 
 ## 📦 Getting Started
 
+### Prerequisites
+
+- Node.js 18+  
+- npm or yarn
+
+### Installation
+
 ```bash
-# Install dependencies
+# 1. Clone the repository
+git clone <repository_url>
+
+# 2. Install dependencies
 npm install
 
-# Run development server
+# 3. Run development server
 npm run dev
-
-# Open http://localhost:3000
 ```
 
-## 🎯 How It Works
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-### Approach
+### Building for Production
 
-The pagination system uses a **custom ProseMirror plugin** that transforms the single-canvas editor into a realistic **"Page View"**:
+```bash
+npm run build
+npm start
+```
 
-1. **Desk Simulation**: The editor container acts as a "Gray Desk".
-2. **Page Simulation**: The content canvas is styled white. We inject "Visual Gap" widgets that mask the continuous white background at specific intervals, creating the illusion of distinct separate pages.
-3. **Calculation**: On every transaction, we measure the pixel height of every block. If `Height > 931px` (A4 Content Area), we inject a spacer.
-4. **Smart Labeling**: The spacer displays the correct page number (Page 1, Page 2...) dynamically.
+## 🧠 Engineering Decisions
 
-### Key Implementation Details
+### The Challenge: "True" Web Pagination
 
-**PaginationExtension** (`src/extensions/pagination.ts`):
-- Uses `Decoration.widget` to render the complex "Page Gap" structure.
-- Implements `requestAnimationFrame` loop to debounce rapid typing measurements.
-- Uses `ResizeObserver` to handle window resizing reflows.
+Web browsers are designed for continuous scrolling (infinite canvas), while legal documents require strict A4 pagination (210mm x 297mm) for printing and distinct page references (e.g., "See Page 3"). 
 
-**Export System** (`src/utils/exportUtils.ts`):
-- **PDF**: Uses `html-to-image` to serialize the DOM into an SVG/PNG. This bypasses the limitations of JS-based CSS parsers (like `html2canvas`), enabling full support for modern CSS variables and Tailwind v4 features.
-- **DOCX**: wraps content in standard HTML structure and converts via `html-docx-js-typescript`.
+The core technical challenge was: **How do we enforce A4 page breaks in a web editor without breaking the rich-text editing experience?**
 
-**A4 Constants** (at 96 DPI):
-- Page Height: 1123px (297mm)
-- Margins: 96px top/bottom (1 inch)
-- Content Area: 931px
+### Our Approach: "View-Layer" Pagination
 
-### Recent Improvements (v1.2)
-- **PDF Export Engine**: Switched to `html-to-image` to resolve "lab() color" syntax crashes.
-- **Codebase Cleanup**: Removed all legacy comments and debug code.
-- **Fixed Page Numbering**: Logic corrected to accurately label the footer of the current page.
-- **Performance**: Removed layout transitions to prevent thrashing; Toolbar is now instant.
-- **UX**: Added tooltips to all buttons and cursor-pointer indicators.
+Instead of splitting the actual document model into separate nodes (which breaks text selection across pages and complicates data storage), we use a **Single-Document, Visual-Splitting** approach.
+
+1.  **Single ProseMirror Doc**: The underlying data is one continuous document. This ensures that features like search, copy-paste, and state history work seamlessly.
+2.  **Decoration-Based Spacers**: We utilize ProseMirror's `Decoration.widget` API to inject "Page Drag/Gap" elements into the editor view.
+3.  **Dynamic Measurement Loop**:
+    *   We listen for standard editing events (typing, pasting).
+    *   Using a debounced `requestAnimationFrame` loop, we query the `getBoundingClientRect` of every block-level element.
+    *   We maintain a running total of `usedHeight`. When a block would overflow the A4 content area (931px), we calculate the exact remaining space and inject a "Spacer Widget" before that block.
+    *   **The Spacer**: This widget visually consumes the rest of the current page + the top margin of the next page, effectively "pushing" the content to Start of Page N+1.
+
+### Trade-offs & Limitations
+
+1.  **Block-Level Granularity**: 
+    *   *Limitation*: Currently, the system measures *blocks* (paragraphs, headers). If a single paragraph is longer than an entire page, it will not be split visually; the start of the paragraph effectively determines the page break.
+    *   *Result*: A 50-line paragraph might be pushed entirely to the next page, leaving a large gap on the previous one.
+
+2.  **DOM-Dependent Performance**:
+    *   *Limitation*: We rely on `window.getComputedStyle` and `getBoundingClientRect`. Reading these values forces the browser to calculate layout (Reflow).
+    *   *Mitigation*: We batch these reads in a dedicated measure cycle and use `requestAnimationFrame` to avoid "Layout Thrashing" (Read-Write loops). It performs well for documents up to ~20-30 pages but may stutter on 100+ page docs.
+
+3.  **Strict Visuals vs. Semantic Pages**:
+    *   Since pages are visual illusions, "Page 2" doesn't exist in the data model. We cannot easily attach metadata *to* a page (e.g., "Page 2 has a specific comment") without calculating its position effectively at runtime.
+
+### Future Improvements (With More Time)
+
+1.  **Node Splitting**: Implement a logic to visually split long text nodes. This would involve finding the exact character index where the break occurs and inserting a widget *inside* the text node (or virtually splitting it).
+2.  **Virtualization**: For long documents (50+ pages), we would implement windowing—only measuring and rendering the pages currently in the viewport to maintain 60FPS.
+3.  **Web Worker Off-loading**: Move the heavy calculation logic to a Web Worker to keep the UI thread unblocked, although this requires syncing the DOM state which is non-trivial.
 
 ## 🏗️ Architecture
 
